@@ -82,4 +82,4 @@ function CALT() { // the main function, containing both the lexer, parser and in
         //TODO: finish
     };
 };
-module.exports = {CALT}; //export our logic to run.js to actually run
+module.exports = {CALT}; // export our logic to run.js because we need it to actually run in .calt files
