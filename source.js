@@ -1,6 +1,6 @@
 function CALT() { // the main function, containing both the lexer, parser and interpreter
     function lexer(src) {
-        let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", "<": "OUTPUT_START", ">": "OUTPUT_END"};
+        let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", "<": "OUTPUT_START", ">": "OUTPUT_END", "=": "EQUALS"};
         let keywords = {"output": "START", "org": "ORIGIN", "var": "VARIABLE", "const": "CONSTANT", "ret": "RETURN"};
         let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQUARE_ROOT", "!": "FACTORIAL", "?": "TERMIAL"};
         let pos = 0; // for keeping ttack on what token we're currently on
@@ -27,6 +27,7 @@ function CALT() { // the main function, containing both the lexer, parser and in
         function alpha(x) { // here made to combine both letter(x) and digit(x), alpha not being from alpha male, just alphanumerical
             if(letter(x) || digit(x)) {return true};
             else {return false};
+        };
         while(pos < source.length) { // main while loop, so that we actually advance throught the source
             const char = src[pos]; // constant current character, changes through each iteration of the while loop so we dont rely on src[pos] too much
             switch(true) { // switch statement instead of if/else if/else because it's both cleaner and more optimized
@@ -42,6 +43,9 @@ function CALT() { // the main function, containing both the lexer, parser and in
                             move(); // for making sure we dont just get stuck in the loop
                         };
                     };
+                    if(val.startsWith("00") || val.split(".").length - 1 > 1) {
+                        throw new Error(`number found at line ${line}, column ${columm} is malformed/not valid(e.g. "00.7" because of double zero).`);
+                    };
                     token("DIGIT", val); // here for pushing tokens to the lexer
                     break;
                 case char in simples: // here to simplify(ha, get it?) handling of single-character tokens
@@ -55,12 +59,27 @@ function CALT() { // the main function, containing both the lexer, parser and in
                         move(); // for making sure we dont get stuck in the loop
                     };
                     if(val in keywords) { // for checking if the identifier is whitelisted
-                        let type = keywords[char] + "_KEYWORD"; 
-                        token(type, val); // if yes, passed as a keyword.
+                        token(`${keywords[char]}_KEYWORD`, val); // if yes, passed as a keyword.
                     } // If not..
-                    else {throw new Error("Unrecognized identifier at line " + line + ", column " + columm + ".")};
+                    else {throw new Error(`unrecognized identifier at line ${line}, column ${columm}.`)};
+                    break;
+                case char in ar_operators: // for checking of arithmetical operatora
+                    let type = ar_operators[char]; // for simplyfying the token() function
+                    if((char !== '!' || char !== '?' || char !== "'") && src[pos+1] === '=') {token(type + "_EQUALS", char + '='); move(2)}; // condition for checking of math shortcuts while also making sure there's nothing like x != x(which would mean x = x!(factorial)
+                    else if(src[pos+1] === "=") {
+                        throw new Error(`can't assign a variable its own factorial, termial or square root via shortcut, at line ${line}, column ${column}.`);
+                    } 
+                    else if(char === src[pos+1] && (char === '?' || char === '!')) {token(`DOUBLE_${char}_OPERATOR`, `${char}${char}`); move(2)};
+                    else {token(type + "_OPERATOR", val); move()};
                     break;
             };
-      };    
+        };
+        token("END_OF_FILE", null);
+        return tokens;
+    };
+    function parser(tokens) {
+        let current = 0;
+        //TODO: finish
+    };
 };
 module.exports = {CALT}; //export our logic to run.js to actually run
