@@ -82,6 +82,17 @@ function CALT() { // the main function, containing both the lexer, parser and in
                     else if(char === src[pos+1] && (char === '?' || char === '!')) {token(`DOUBLE_${char}_OPERATOR`, `${char}${char}`); move(2)}; // here because it helps process double factorial/termial
                     else {token(`${operatorType}_OPERATOR`, `${char}`); move()}; // here to tokenize normal operators.
                     break;
+                case char === "#":
+                    let variableVal = ``;
+                    move();
+                    while(letter(src[pos])) {
+                        variableVal += src[pos];
+                        move();
+                    };
+                    token("VARIABLE", `${variableVal}`);
+                    break;
+                default:
+                    throw new Error(`unrecognized token '${char}' at line ${line}, column ${column}.`);
             };
         };
         token("END_OF_FILE", null); // lets the parser know when to stop tokenizing
@@ -98,6 +109,10 @@ function CALT() { // the main function, containing both the lexer, parser and in
         }
         function eat(expected) {
             if(peek().type === expected) {
+                current++;
+                return peek(-1);
+            }
+            else if(peek().type.includes(`_${expected}`)) {
                 current++;
                 return peek(-1);
             }
@@ -129,13 +144,27 @@ function CALT() { // the main function, containing both the lexer, parser and in
         |*|
         \*/
         function parseARG() {
-            switch(peek().type) {
-                case 'DIGIT':
+            switch(true) {
+                case peek().type === 'DIGIT':
                     let number = eat("DIGIT");
                     return {
                         type: "Literal",
                         valueType: "Number",
                         value: number.value
+                    };
+                    break;
+                case peek().type.includes('KEYWORD'):
+                    let keyword = eat("KEYWORD");
+                    return {
+                        type: "Keyword",
+                        name: keyword.value
+                    };
+                    break;
+                case peek().type === "VARIABLE":
+                    let variable = eat("VARIABLE");
+                    return {
+                        type: "VariableReference",
+                        name: variable.value
                     };
                     break;
             };
