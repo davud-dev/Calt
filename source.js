@@ -2,12 +2,15 @@ function CALT() { // the main function, containing both the lexer, parser and in
     function lexer(src) {
         let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", "<": "OUTPUT_START", ">": "OUTPUT_END", "=": "EQUALS"};
         let keywords = {"output": "START", "org": "ORIGIN", "var": "VARIABLE", "const": "CONSTANT", "ret": "RETURN"};
-        let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQUARE_ROOT", "!": "FACTORIAL", "?": "TERMIAL"};
+        let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL"};
         let whitespace = ['\n', '\t', '\r', ' '];
-        let pos = 0; // for keeping ttack on what token we're currently on
+        let pos = 0; // for keeping track on what token we're currently on
         let tokens = []; // for having an actual token array to have tokens in, allowing the parser to do something with em
         let line = 1;               //both the line          for better
-        let column = 1; //tracking of             and column         error messages
+        let column = 1; //tracking of              and column          error messages
+        /*\
+        |*|
+        \*/
         function move(n = 1) {pos += n; column += n}; // for making me stop forgetting to only do pos++ and not also column++;
         function token(x, y) { // here made to simplify the process from tokens.push({type: x, value: y, line: line, column: columm}) to just token(x, y)
             tokens.push({
@@ -29,8 +32,11 @@ function CALT() { // the main function, containing both the lexer, parser and in
             if(letter(x) || digit(x)) {return true};
             else {return false};
         };
+        /*\
+        |*|
+        \*/
         while(pos < src.length) { // main while loop, so that we actually advance throught the source
-            const char = src[pos]; // constant current character, changes through each iteration of the while loop so we dont rely on src[pos] too much
+            let char = src[pos]; // constant current character, changes through each iteration of the while loop so we dont rely on src[pos] too much
             switch(true) { // switch statement instead of if/else if/else because it's both cleaner and more optimized
                 case digit(char):
                     digitVal = ''; // here for storing a solid value which can be used for our numbers "rendering" as a token
@@ -81,6 +87,9 @@ function CALT() { // the main function, containing both the lexer, parser and in
         token("END_OF_FILE", null); // lets the parser know when to stop tokenizing
         return tokens;
     };
+    /*\
+    |*|
+    \*/
     function parser(tokens) {
         let current = 0;
         function peek(n = 0) {
@@ -90,9 +99,46 @@ function CALT() { // the main function, containing both the lexer, parser and in
         function eat(expected) {
             if(peek().type === expected) {
                 current++;
-                return tokens[current-1];
+                return peek(-1);
             }
-            else {};
+            else {
+                throw new Error(`unexpected token '${peek()}' instead of expected '${expected}'.`);
+            };
+        };
+        /*\
+        |*|
+        \*/
+        function operation(lower, types) {
+            let L = lower;
+            while(types.includes(peek().type) {
+                const operator = eat(peek().type).value;
+                let R = lower;
+                L = {
+                   type: "BinaryOperation",
+                   operator: operator,
+                   left: L,
+                   right: R
+                };
+            };
+            return L;
+        };
+        function parseAS() {operation(parseMDM(), ["PLUS", "MINUS"])};
+        function parseMDM() {operation(parsePSFT(), ["TIMES", "DIVIDE", "MODULO"])};
+        function parsePSFT() {operation(parseARG(), ["POWER_OPERATOR", "SQR_RT_OPERATOR", "FACTORIAL_OPERATOR", "TERMIAL_OPERATOR", "DOUBLE_FACTORIAL_OPERATOR", "DOUBLE_TERMIAL_OPERATOR"])};
+        /*\
+        |*|
+        \*/
+        function parseARG() {
+            switch(peek().type) {
+                case 'DIGIT':
+                    let number = eat("DIGIT");
+                    return {
+                        type: "Literal",
+                        valueType: "Number",
+                        value: number.value
+                    };
+                    break;
+            };
         };
     };
 };
