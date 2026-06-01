@@ -49,11 +49,11 @@ function CALT() { // the main function, containing both the lexer, parser and in
                     if(digitVal.startsWith("00") || digitVal.split(".").length - 1 > 1) { // splits the code in the areas where there are dots, but because there is always one more part(e.g. 2 parts from 1 slice(dot), we have to remove 1 part
                         throw new Error(`number found at line ${line}, column ${column} is malformed/not valid(e.g. "00.7" because of double zero).`);
                     };
-                    token("DIGIT", val); // here for pushing tokens to the lexer
+                    token("DIGIT", `${val}`); // here for pushing tokens to the lexer
                     break;
                 case char in simples: // here to simplify(ha, get it?) handling of single-character tokens
                     let simpleType = simples[char]; // e.g. simples('(') is 'LPAREN' so we automatically get the typw
-                    token(simpleType, char); 
+                    token(`${simpleType}`, `${char}`); 
                     move();// so we can move past the token and not create an infinite amount of simples
                     break;
                 case letter(char): // here for handling of keywords and other recognized identifiers
@@ -63,7 +63,7 @@ function CALT() { // the main function, containing both the lexer, parser and in
                         move(); // for making sure we dont get stuck in the loop
                     };
                     if(letterVal in keywords) { // for checking if the identifier is whitelisted
-                        token(`${keywords[letterVal]}_KEYWORD`, letterVal); // if yes, passed as a keyword.
+                        token(`${keywords[letterVal]}_KEYWORD`, `${letterVal}`); // if yes, passed as a keyword.
                     } // If not..
                     else {throw new Error(`unrecognized identifier '${letterVal}' at line ${line}, column ${column}.`)};
                     break;
@@ -74,7 +74,7 @@ function CALT() { // the main function, containing both the lexer, parser and in
                         throw new Error(`can't assign a variable its own factorial, termial or square root via shortcut, at line ${line}, column ${column}.`);
                     } 
                     else if(char === src[pos+1] && (char === '?' || char === '!')) {token(`DOUBLE_${char}_OPERATOR`, `${char}${char}`); move(2)}; // here because it helps process double factorial/termial
-                    else {token(`${operatorType}_OPERATOR`, char); move()}; // here to tokenize normal operators.
+                    else {token(`${operatorType}_OPERATOR`, `${char}`); move()}; // here to tokenize normal operators.
                     break;
             };
         };
@@ -83,7 +83,17 @@ function CALT() { // the main function, containing both the lexer, parser and in
     };
     function parser(tokens) {
         let current = 0;
-        function peek() {return tokens[current]}
+        function peek(n = 0) {
+            if(current > tokens.length) {throw new Error(`unexpected file end, couldn't parse tokens`)};
+            return tokens[current + n];
+        }
+        function eat(expected) {
+            if(peek().type === expected) {
+                current++;
+                return tokens[current-1];
+            }
+            else {};
+        };
     };
 };
 module.exports = {CALT}; // export our logic to run.js because we need it to actually run in .calt files
