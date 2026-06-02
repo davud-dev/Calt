@@ -144,31 +144,61 @@ function CALT() { // the main function, containing both the lexer, parser and in
         |*|
         \*/
         function parseARG() {
+            const token = peek();
             switch(true) {
-                case peek().type === 'DIGIT':
-                    let number = eat("DIGIT");
+                case token.type === 'DIGIT':
+                    const number = eat("DIGIT");
                     return {
                         type: "Literal",
                         valueType: "Number",
                         value: number.value
                     };
                     break;
-                case peek().type.includes('KEYWORD'):
-                    let keyword = eat("KEYWORD");
-                    return {
-                        type: "Keyword",
-                        name: keyword.value
+                case token.type.includes('KEYWORD'):
+                    const next = peek(1);
+                    if(next.type !== "LPAREN") {
+                        const keyword = eat("KEYWORD");
+                        return {
+                            type: "Keyword",
+                            name: keyword.value
+                        };
+                    } 
+                    else {
+                        parseFUNC();
                     };
                     break;
-                case peek().type === "VARIABLE":
-                    let variable = eat("VARIABLE");
+                case token.type === "VARIABLE":
+                    const variable = eat("VARIABLE");
                     return {
                         type: "VariableReference",
                         name: variable.value
                     };
                     break;
+                default:
+                    throw new Error(`unrecognized argument '${token.value}' at line ${token.line}, column ${token.columm}.`);
             };
         };
+        function parseFUNC() {
+            const name = eat("KEYWORD");
+            eat("LPAREN");
+            const args = [];
+            while(peek().type !== "RPAREN") {
+                const token = peek().type;
+                if(token !== "COMMA") {
+                    args.push(parseARG());
+                }
+                else {
+                    eat("COMMA");
+                };
+            };
+            eat("RPAREN");
+            return {
+                type: "FunctionCall",
+                name: name.value,
+                arguments: args
+            };
+        };
+        //TODO: implementing variable declaration parsing, full program parsing and statement parsing.
     };
 };
 module.exports = {CALT}; // export our logic to run.js because we need it to actually run in .calt files
