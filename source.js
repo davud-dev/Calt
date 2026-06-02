@@ -1,6 +1,6 @@
 function CALT() { // the main function, containing both the lexer, parser and interpreter
    function lexer(src) {
-        let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", "<": "OUTPUT_START", ">": "OUTPUT_END", "=": "EQUALS"};
+        let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS"};
         let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "func": "FUNCTION"};
         let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL"};
         let whitespace = ['\n', '\t', '\r', ' '];
@@ -55,7 +55,7 @@ function CALT() { // the main function, containing both the lexer, parser and in
                     if(digitVal.startsWith("00") || digitVal.split(".").length - 1 > 1) { // splits the code in the areas where there are dots, but because there is always one more part(e.g. 2 parts from 1 slice(dot), we have to remove 1 part
                         throw new Error(`number found at line ${line}, column ${column} is malformed/not valid(e.g. "00.7" because of double zero).`);
                     };
-                    token("DIGIT", `${val}`); // here for pushing tokens to the lexer
+                    token("DIGIT", `${digitVal}`); // here for pushing tokens to the lexer
                     break;
                 case char in simples: // here to simplify(ha, get it?) handling of single-character tokens
                     let simpleType = simples[char]; // e.g. simples('(') is 'LPAREN' so we automatically get the typw
@@ -68,7 +68,7 @@ function CALT() { // the main function, containing both the lexer, parser and in
                         letterVal += src[pos];
                         move(); // for making sure we dont get stuck in the loop
                     };
-                    if(letterVal in keywords) { // for checking if the identifier is whitelisted
+                    if(letterVal in keywords || ) { // for checking if the identifier is whitelisted
                         token(`${keywords[letterVal]}_KEYWORD`, `${letterVal}`); // if yes, passed as a keyword.
                     } // If not..
                     else {throw new Error(`unrecognized identifier '${letterVal}' at line ${line}, column ${column}.`)};
@@ -92,7 +92,7 @@ function CALT() { // the main function, containing both the lexer, parser and in
                     token("VARIABLE", `${variableVal}`);
                     break;
                 default:
-                    throw new Error(`unrecognized token '${char}' at line ${line}, column ${column}.`);
+                    throw new Error(`unrecognized character '${char}' at line ${line}, column ${column}.`);
             };
         };
         token("END_OF_FILE", null); // lets the parser know when to stop tokenizing
@@ -239,8 +239,14 @@ function CALT() { // the main function, containing both the lexer, parser and in
             };
         };
         function parseALL() {
+            let main = eat("KEYWORD");
+            if(main.type !== "START") {
+               throw new Error(`program is supposed to start with main{}, with code inside {}, but instead of "main" got "${main.value}.`);
+            };
+            eat("LBRACE");
             const statements = [];
-            while(peek().type !== "END_OF_FILE") {statements.push(parseMULTI())};
+            while(peek().type !== "RBRACE") {statements.push(parseMULTI())};
+            eat("RBRACE");
             return {
                 type: "CALT_Program",
                 statements: statements
