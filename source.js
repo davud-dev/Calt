@@ -1,7 +1,7 @@
 function CALT() { // the main function, containing both the lexer, parser and interpreter
    function lexer(src) {
         let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS"};
-        let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "func": "FUNCTION"};
+        let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "fun": "FUNCTION"};
         let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL"};
         let whitespace = ['\n', '\t', '\r', ' '];
         let pos = 0; // for keeping track on what token we're currently on
@@ -75,11 +75,11 @@ function CALT() { // the main function, containing both the lexer, parser and in
                     break;
                 case char in ar_operators: // for checking of arithmetical operatora
                     let operatorType = ar_operators[char]; // for simplyfying the token() function
-                    if((char !== '!' && char !== '?' && char !== "'") && src[pos+1] === '=') {token(`${operatorType}_EQUALS_OPERATOR`, `${char}=`); move(2)}; // condition for checking of math shortcuts while also making sure there's nothing like x != x(which would mean x = x!(factorial)
+                    if((char !== '!' && char !== '?' && char !== "'") && src[pos+1] === '=') {token(`${operatorType}_EQUALS_OPERATOR`, `${char}=`); move(2)} // condition for checking of math shortcuts while also making sure there's nothing like x != x(which would mean x = x!(factorial)
                     else if(src[pos+1] === "=") { // if the operator is either !=, ?= or '=...
                         throw new Error(`can't assign a variable its own factorial, termial or square root via shortcut, at line ${line}, column ${column}.`);
                     } 
-                    else if(char === src[pos+1] && (char === '?' || char === '!')) {token(`DOUBLE_${char}_OPERATOR`, `${char}${char}`); move(2)}; // here because it helps process double factorial/termial
+                    else if(char === src[pos+1] && (char === '?' || char === '!')) {token(`DOUBLE_${char}_OPERATOR`, `${char}${char}`); move(2)} // here because it helps process double factorial/termial
                     else {token(`${operatorType}_OPERATOR`, `${char}`); move()}; // here to tokenize normal operators.
                     break;
                 case char === "#":
@@ -90,6 +90,15 @@ function CALT() { // the main function, containing both the lexer, parser and in
                         move();
                     };
                     token("VARIABLE", `${variableVal}`);
+                    break;
+                case char === '$':
+                    let functionVal = ``;
+                    move();
+                    while(letter(src[pos])) {
+                       functionVal += src[pos];
+                       move();
+                    };
+                    token("FUNCTION", `${functionVal}`);
                     break;
                 default:
                     throw new Error(`unrecognized character '${char}' at line ${line}, column ${column}.`);
@@ -124,10 +133,10 @@ function CALT() { // the main function, containing both the lexer, parser and in
         |*|
         \*/
         function operation(lower, types) {
-            let L = lower;
-            while(types.includes(peek().type) {
+            let L = lower();
+            while(types.includes(peek().type)) {
                 const operator = eat(peek().type).value;
-                let R = lower;
+                let R = lower();
                 L = {
                    type: "BinaryOperation",
                    operator: operator,
@@ -137,9 +146,9 @@ function CALT() { // the main function, containing both the lexer, parser and in
             };
             return L;
         };
-        function parseAS() {operation(parseMDM(), ["PLUS", "MINUS"])};
-        function parseMDM() {operation(parsePSFT(), ["TIMES", "DIVIDE", "MODULO"])};
-        function parsePSFT() {operation(parseARG(), ["POWER_OPERATOR", "SQR_RT_OPERATOR", "FACTORIAL_OPERATOR", "TERMIAL_OPERATOR", "DOUBLE_FACTORIAL_OPERATOR", "DOUBLE_TERMIAL_OPERATOR"])};
+        function parseAS() {return operation(parseMDM(), ["PLUS", "MINUS"])};
+        function parseMDM() {return operation(parsePSFT(), ["TIMES", "DIVIDE", "MODULO"])};
+        function parsePSFT() {return operation(parseARG(), ["POWER_OPERATOR", "SQR_RT_OPERATOR", "FACTORIAL_OPERATOR", "TERMIAL_OPERATOR", "DOUBLE_FACTORIAL_OPERATOR", "DOUBLE_TERMIAL_OPERATOR"])};
         /*\
         |*|
         \*/
@@ -203,8 +212,8 @@ function CALT() { // the main function, containing both the lexer, parser and in
             const vrbName = eat("VARIABLE");
             eat("EQUALS");
             const vrbValue = peek().value;
-            if(declaration === "vrb") {declaration = "Changeable"};
-            else if(declaration === "const") {declaration = "Constant"};
+            if(vrbDeclaration === "vrb") {vrbDeclaration = "Changeable"}
+            else if(vrbDeclaration === "const") {vrbDeclaration = "Constant"}
             else {throw new Error(`unrecognized declaration type '${declaration}' for a variable at line ${line}, column ${column}.`)};
             return {
                 type: "VariableDeclaration",
@@ -213,25 +222,49 @@ function CALT() { // the main function, containing both the lexer, parser and in
                 value: vrbValue
             };
         };
+       function parseNFUNC() {
+          if(eat("KEYWORD").value !== "fun") {
+             throw new Error(``);
+          };
+          eat("FUNCTION");
+          eat("LPAREN");
+          const args = [];
+          while(peek().type !== "RPAREN") {
+             if(peek().type !== "COMMA") {
+                args.push(eat("VARIABLE"));
+             }
+             else {
+                eat("COMMA");
+             };
+          };
+          eat("RPAREN");
+          eat("LBRACE");
+          const body = [];
+          while(peek().type !== "RBRACE") {
+             body.push(parseMULTI());
+          };
+          eat("RBRACE");
+          return {
+             type: "FunctionDeclaration",
+             arguments: args,
+             body: body
+          };
+       }; 
+       /*\
+       |*|
+       \*/
         function parseSINGLE(parseType) {
-            const val = parseType;
+            const val = parseType();
             eat("SEMICOLON");
             return val;
         };
         function parseMULTI() {
             const statement = peek();
-            if(statement.type) === "KEYWORD") {
+            if(statement.type === "KEYWORD") {
                 switch(statement.value) {
-                    case 'vrb':
-                    case 'const':
-                        return parseSINGLE(parseVRB());
-                        break;
-                    case 'fun':
-                        return parseSINGLE(parseNFUNC());
-                        break;
-                    default:           
-                        return parseSINGLE(parseFUNC());
-                        break;
+                    case 'vrb': case 'const': return parseSINGLE(parseVRB()); break;
+                    case 'fun': return parseSINGLE(parseNFUNC()); break;
+                    default: return parseSINGLE(parseFUNC()); break;
                 };
             };
             else {
