@@ -1,7 +1,7 @@
 function CALT() { // the main function, containing both the lexer, parser and interpreter
-    function lexer(src) {
+   function lexer(src) {
         let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", "<": "OUTPUT_START", ">": "OUTPUT_END", "=": "EQUALS"};
-        let keywords = {"output": "START", "org": "ORIGIN", "var": "VARIABLE", "const": "CONSTANT", "ret": "RETURN"};
+        let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "func": "FUNCTION"};
         let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL"};
         let whitespace = ['\n', '\t', '\r', ' '];
         let pos = 0; // for keeping track on what token we're currently on
@@ -198,7 +198,54 @@ function CALT() { // the main function, containing both the lexer, parser and in
                 arguments: args
             };
         };
-        //TODO: implementing variable declaration parsing, full program parsing and statement parsing.
+        function parseVRB() {
+            const vrbDeclaration = eat("KEYWORD").value;
+            const vrbName = eat("VARIABLE");
+            eat("EQUALS");
+            const vrbValue = peek().value;
+            if(declaration === "vrb") {declaration = "Changeable"};
+            else if(declaration === "const") {declaration = "Constant"};
+            else {throw new Error(`unrecognized declaration type '${declaration}' for a variable at line ${line}, column ${column}.`)};
+            return {
+                type: "VariableDeclaration",
+                typeValue: vrbDeclaration,
+                name: vrbName,
+                value: vrbValue
+            };
+        };
+        function parseSINGLE(parseType) {
+            const val = parseType;
+            eat("SEMICOLON");
+            return val;
+        };
+        function parseMULTI() {
+            const statement = peek();
+            if(statement.type) === "KEYWORD") {
+                switch(statement.value) {
+                    case 'vrb':
+                    case 'const':
+                        return parseSINGLE(parseVRB());
+                        break;
+                    case 'fun':
+                        return parseSINGLE(parseNFUNC());
+                        break;
+                    default:           
+                        return parseSINGLE(parseFUNC());
+                        break;
+                };
+            };
+            else {
+                throw new Error(`invalid token '${statement.value}' instead of regular statement at line ${statement.line}, column ${statement.column}.`);
+            };
+        };
+        function parseALL() {
+            const statements = [];
+            while(peek().type !== "END_OF_FILE") {statements.push(parseMULTI())};
+            return {
+                type: "CALT_Program",
+                statements: statements
+            };
+        };
     };
 };
 module.exports = {CALT}; // export our logic to run.js because we need it to actually run in .calt files
