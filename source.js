@@ -1,6 +1,6 @@
 function CALT() { // the main function, containing both the lexer, parser and interpreter
    function lexer(src) {
-        let simples = {'(': "LPAREN", ')': "RPAREN", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS"};
+        let simples = {'(': "LPAREN", ')': "RPAREN", '[': "LBRACK", ']': "RBRACK", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS"};
         let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "fun": "FUNCTION"};
         let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL"};
         let whitespace = ['\n', '\t', '\r', ' '];
@@ -21,16 +21,13 @@ function CALT() { // the main function, containing both the lexer, parser and in
             });
         };
         function digit(x) { // here made to simplify the checking of whether x is a digit or not
-            if(parseInt(x) <= 9 && parseInt(x) >= 0) {return true};
-            else {return false};
+            if(x <= '9' && x >= '0') {return true} else {return false};
         };
         function letter(x) { // same thing as digit(x), but for letters
-            if((x <= 'z' && x >= 'a') || (x <= 'Z' && x >= 'A')) {return true};
-            else {return false};
+            if((x <= 'z' && x >= 'a') || (x <= 'Z' && x >= 'A')) {return true} else {return false};
         };
         function alpha(x) { // here made to combine both letter(x) and digit(x), alpha not being from alpha male, just alphanumerical
-            if(letter(x) || digit(x)) {return true};
-            else {return false};
+            if(letter(x) || digit(x)) {return true} else {return false};
         };
         /*\
         |*|
@@ -83,29 +80,21 @@ function CALT() { // the main function, containing both the lexer, parser and in
                     else {token(`${operatorType}_OPERATOR`, `${char}`); move()}; // here to tokenize normal operators.
                     break;
                 case char === "#":
-                    let variableVal = ``;
-                    move();
-                    while(letter(src[pos])) {
-                        variableVal += src[pos];
-                        move();
-                    };
-                    token("VARIABLE", `${variableVal}`);
-                    break;
+                    let variableVal = ``; move();
+                    while(letter(src[pos])) {variableVal += src[pos]; move()};
+                    token("VARIABLE", `${variableVal}`); break;
                 case char === '$':
-                    let functionVal = ``;
-                    move();
-                    while(letter(src[pos])) {
-                       functionVal += src[pos];
-                       move();
-                    };
-                    token("FUNCTION", `${functionVal}`);
-                    break;
-                default:
-                    throw new Error(`unrecognized character '${char}' at line ${line}, column ${column}.`);
+                    let functionVal = ``; move();
+                    while(letter(src[pos])) {functionVal += src[pos]; move()};
+                    token("FUNCTION", `${functionVal}`); break;
+                case char === '_':
+                    let outputVal = ``; move();
+                    while(src[pos] !== char) {outputVal += src[pos]; move()};
+                    token("OUTPUT", `${outputVal}`); break;
+                default: throw new Error(`unrecognized character '${char}' at line ${line}, column ${column}.`);
             };
         };
-        token("END_OF_FILE", null); // lets the parser know when to stop tokenizing
-        return tokens;
+        token("END_OF_FILE", null); return tokens;
     };
     /*\
     |*|
@@ -117,17 +106,8 @@ function CALT() { // the main function, containing both the lexer, parser and in
             return tokens[current + n];
         }
         function eat(expected) {
-            if(peek().type === expected) {
-                current++;
-                return peek(-1);
-            }
-            else if(peek().type.includes(`_${expected}`)) {
-                current++;
-                return peek(-1);
-            }
-            else {
-                throw new Error(`unexpected token '${peek()}' instead of expected '${expected}'.`);
-            };
+            if(peek().type === expected) {current++; return peek(-1)} else if(peek().type.includes(`_${expected}`)) {current++; return peek(-1)}
+            else {throw new Error(`unexpected token '${peek()}' instead of expected '${expected}'.`)};
         };
         /*\
         |*|
@@ -135,8 +115,7 @@ function CALT() { // the main function, containing both the lexer, parser and in
         function operation(lower, types) {
             let L = lower();
             while(types.includes(peek().type)) {
-                const operator = eat(peek().type).value;
-                let R = lower();
+                const operator = eat(peek().type).value; let R = lower();
                 L = {
                    type: "BinaryOperation",
                    operator: operator,
@@ -152,55 +131,37 @@ function CALT() { // the main function, containing both the lexer, parser and in
         /*\
         |*|
         \*/
-        function parseARG() {
-            const token = peek();
+        function parseARG() {const token = peek();
             switch(true) {
-                case token.type === 'DIGIT':
-                    const number = eat("DIGIT");
+                case token.type === 'DIGIT': const number = eat("DIGIT").value;
                     return {
                         type: "Literal",
                         valueType: "Number",
-                        value: number.value
-                    };
-                    break;
-                case token.type.includes('KEYWORD'):
-                    const next = peek(1);
-                    if(next.type !== "LPAREN") {
-                        const keyword = eat("KEYWORD");
+                        value: number
+                    }; break;
+                case token.type.includes('KEYWORD'): const next = peek(1);
+                    if(next.type !== "LPAREN") {const keyword = eat("KEYWORD").value;
                         return {
                             type: "Keyword",
-                            name: keyword.value
+                            name: keyword
                         };
-                    } 
-                    else {
-                        parseFUNC();
-                    };
-                    break;
-                case token.type === "VARIABLE":
-                    const variable = eat("VARIABLE");
+                    } else {parseFUNC()}; break;
+                case token.type === "VARIABLE": const variable = eat("VARIABLE").value;
                     return {
                         type: "VariableReference",
-                        name: variable.value
-                    };
-                    break;
-                default:
-                    throw new Error(`unrecognized argument '${token.value}' at line ${token.line}, column ${token.columm}.`);
+                        name: variable
+                    }; break;
+                case token.type === "OUTPUT": const output = eat("OUTPUT").value;
+                    return {
+                        type: "ExpectedOutput",
+                        value: output
+                    }; break;
+                default: throw new Error(`unrecognized argument '${token.value}' at line ${token.line}, column ${token.columm}.`);
             };
         };
         function parseFUNC() {
-            const name = eat("KEYWORD");
-            eat("LPAREN");
-            const args = [];
-            while(peek().type !== "RPAREN") {
-                const token = peek().type;
-                if(token !== "COMMA") {
-                    args.push(parseARG());
-                }
-                else {
-                    eat("COMMA");
-                };
-            };
-            eat("RPAREN");
+            const name = eat("KEYWORD"); eat("LPAREN"); const args = [];
+            while(peek().type !== "RPAREN") {const token = peek().type; if(token !== "COMMA") {args.push(parseARG())} else {eat("COMMA")}}; eat("RPAREN");
             return {
                 type: "FunctionCall",
                 name: name.value,
@@ -208,12 +169,8 @@ function CALT() { // the main function, containing both the lexer, parser and in
             };
         };
         function parseVRB() {
-            const vrbDeclaration = eat("KEYWORD").value;
-            const vrbName = eat("VARIABLE");
-            eat("EQUALS");
-            const vrbValue = peek().value;
-            if(vrbDeclaration === "vrb") {vrbDeclaration = "Changeable"}
-            else if(vrbDeclaration === "const") {vrbDeclaration = "Constant"}
+            const vrbDeclaration = eat("KEYWORD").value; const vrbName = eat("VARIABLE"); eat("EQUALS"); const vrbValue = peek().value;
+            if(vrbDeclaration === "vrb") {vrbDeclaration = "Changeable"} else if(vrbDeclaration === "const") {vrbDeclaration = "Constant"}
             else {throw new Error(`unrecognized declaration type '${declaration}' for a variable at line ${line}, column ${column}.`)};
             return {
                 type: "VariableDeclaration",
@@ -222,64 +179,61 @@ function CALT() { // the main function, containing both the lexer, parser and in
                 value: vrbValue
             };
         };
-       function parseNFUNC() {
-          if(eat("KEYWORD").value !== "fun") {
-             throw new Error(``);
-          };
-          eat("FUNCTION");
-          eat("LPAREN");
-          const args = [];
-          while(peek().type !== "RPAREN") {
-             if(peek().type !== "COMMA") {
-                args.push(eat("VARIABLE"));
-             }
-             else {
-                eat("COMMA");
-             };
-          };
-          eat("RPAREN");
-          eat("LBRACE");
-          const body = [];
-          while(peek().type !== "RBRACE") {
-             body.push(parseMULTI());
-          };
-          eat("RBRACE");
-          return {
-             type: "FunctionDeclaration",
-             arguments: args,
-             body: body
-          };
-       }; 
+        function parseNFUNC() {
+           eat("FUNCTION"); eat("LPAREN"); const args = [];
+           while(peek().type !== "RPAREN") {if(peek().type !== "COMMA") {args.push(eat("VARIABLE"))} else {eat("COMMA")}};
+           eat("RPAREN"); eat("LBRACE"); const body = []; while(peek().type !== "RBRACE") {body.push(parseMULTI())}; eat("RBRACE");
+           return {
+               type: "FunctionDeclaration",
+               arguments: args,
+               body: body
+           };
+        };  
+        function parseCOND() {
+            eat("KEYWORD"); eat("LPAREN"); const cond = parseEXPR(); eat("RPAREN"); eat("LBRACK"); let body = [];
+            while(peek().type !== "RBRACK") {body.push(parseMULTI())}; let elfBlocks = []; let elsBlock = null;
+            while(peek().type === "KEYWORD" && peek().value === "elf") {
+                eat("IDENTIFIER"); eat("LPAREN"); const elfCond = parseEXPR(); eat("RPAREN"); eat("LBRACK"); const elfBody = [];
+                while(peek().type !== "RBRACK") {body.push(parseMULTI())};
+                bifBlocks.push({
+                    type: "ElfStatement",
+                    condition: elfCond,
+                    body: elfBody
+                });
+            };
+            if(peek().type === "KEYWORD" && peek().value === "els") {
+                eat("IDENTIFIER"); eat("LBRACK"); const elsBody = []; while(peek().type !== "RBRACK") {body.push(parseMULTI())};
+                elsBlock = ({
+                    type: "ElsStatement",
+                    body: elsBody
+                )};
+            };
+            return {
+                type: "IfStatement",
+                condition: cond,
+                body: body,
+                elfs: elfBlocks,
+                els: elsBlock
+            };
+        };
        /*\
        |*|
        \*/
-        function parseSINGLE(parseType) {
-            const val = parseType();
-            eat("SEMICOLON");
-            return val;
-        };
-        function parseMULTI() {
-            const statement = peek();
+        function parseSINGLE(parseType) {const val = parseType(); eat("SEMICOLON"); return val};
+        function parseMULTI() {const statement = peek();
             if(statement.type === "KEYWORD") {
                 switch(statement.value) {
                     case 'vrb': case 'const': return parseSINGLE(parseVRB()); break;
                     case 'fun': return parseSINGLE(parseNFUNC()); break;
+                    case 'if': return parseSINGLE(parseCOND()); break;
                     default: return parseSINGLE(parseFUNC()); break;
                 };
             };
-            else {
-                throw new Error(`invalid token '${statement.value}' instead of regular statement at line ${statement.line}, column ${statement.column}.`);
-            };
+            else {throw new Error(`invalid token '${statement.value}' instead of regular statement at line ${statement.line}, column ${statement.column}.`)};
         };
-        function parseALL() {
-            let main = eat("KEYWORD");
-            if(main.type !== "START") {
-               throw new Error(`program is supposed to start with main{}, with code inside {}, but instead of "main" got "${main.value}.`);
-            };
-            eat("LBRACE");
-            const statements = [];
-            while(peek().type !== "RBRACE") {statements.push(parseMULTI())};
-            eat("RBRACE");
+        function parseALL() {let main = eat("KEYWORD");
+            if(main.type !== "START") {throw new Error(`program is supposed to start with main{}, with code inside {}, but instead of "main" got "${main.value}.`)};
+            eat("LBRACE"); const statements = []; while(peek().type !== "RBRACE") {statements.push(parseMULTI())}; eat("RBRACE");
             return {
                 type: "CALT_Program",
                 statements: statements
