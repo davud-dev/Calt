@@ -1,84 +1,72 @@
-function CALT() { // the main function, containing both the lexer, parser and interpreter
+function CALT() {
    function lexer(src) {
-        let simples = {'(': "LPAREN", ')': "RPAREN", '[': "LBRACK", ']': "RBRACK", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS"};
-        let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "fun": "FUNCTION"};
-        let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL"};
+        let simples = {'(': "LPAREN", ')': "RPAREN", '[': "LBRACK", ']': "RBRACK", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS", ">": "GREATER_THAN", "<": "SMALLER_THAN", ">=": "GREATER_EQUALS", "<=": "SMALLER_EQUALS"};
+        let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "fun": "FUNCTION", "output": "OUTPUT_FUNC", "input": "INPUT_FUNC", "cos": "COSINE_FUNC", "sin": "SINE_FUNC", "tan": "TANGENT_FUNC", "log": "LOGARITHM_FUNC"};
+        let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL", "|": "ABSOLUTE_VALUE", "\\": "FLOOR", "/": "CEILING", "~": "ROUND"};
         let whitespace = ['\n', '\t', '\r', ' '];
-        let pos = 0; // for keeping track on what token we're currently on
-        let tokens = []; // for having an actual token array to have tokens in, allowing the parser to do something with em
-        let line = 1;               //both the line          for better
-        let column = 1; //tracking of              and column          error messages
+        let pos = 0;
+        let tokens = []; 
+        let line = 1;
+        let column = 1;
         /*\
         |*|
         \*/
-        function move(n = 1) {pos += n; column += n}; // for making me stop forgetting to only do pos++ and not also column++;
-        function token(x, y) { // here made to simplify the process from tokens.push({type: x, value: y, line: line, column: columm}) to just token(x, y)
+        function move(n = 1) {pos += n; column += n}; 
+        function token(type, val) {
             tokens.push({
-                type: x,
-                value: y,
+                type: type,
+                value: val,
                 line: line,
                 column: column
             });
         };
-        function digit(x) { // here made to simplify the checking of whether x is a digit or not
+        function digit(x) {
             if(x <= '9' && x >= '0') {return true} else {return false};
         };
-        function letter(x) { // same thing as digit(x), but for letters
+        function letter(x) { 
             if((x <= 'z' && x >= 'a') || (x <= 'Z' && x >= 'A')) {return true} else {return false};
         };
-        function alpha(x) { // here made to combine both letter(x) and digit(x), alpha not being from alpha male, just alphanumerical
+        function alpha(x) { 
             if(letter(x) || digit(x)) {return true} else {return false};
         };
         /*\
         |*|
         \*/
-        while(pos < src.length) { // main while loop, so that we actually advance throught the source
-            let char = src[pos]; // constant current character, changes through each iteration of the while loop so we dont rely on src[pos] too much
-            switch(true) { // switch statement instead of if/else if/else because it's both cleaner and more optimized
+        while(pos < src.length) {
+            let char = src[pos]; 
+            switch(true) { 
+                case char in whitespace:
+                  if(char === '\n') {line++; column = 1}; pos++; break;
                 case digit(char):
-                    digitVal = ''; // here for storing a solid value which can be used for our numbers "rendering" as a token
-                    while(digit(src[pos])) { // here for handling of regular integers
-                        digitVal += src[pos]; 
-                        move(); // for making sure we dont just get stuck in the loop
+                    let digitVal = '';
+                    while(digit(src[pos])) {digitVal += src[pos]; move()};
+                    if(src[pos] === ".") {
+                        digitVal += src[pos]; move();
+                        while(digit(src[pos])) {digitVal += src[pos]; move()};
                     };
-                    if(src[pos] === ".") { // here for handling of floats and what-not
-                        digitVal += src[pos]; // for processing the dot making sure we get 3.14 and not 314
-                        move(); // for advancing past the dot, for the while, else we get stuck
-                        while(digit(src[pos])) {
-                            digitVal += src[pos];
-                            move(); // for making sure we dont just get stuck in the loop
-                        };
-                    };
-                    if(digitVal.startsWith("00") || digitVal.split(".").length - 1 > 1) { // splits the code in the areas where there are dots, but because there is always one more part(e.g. 2 parts from 1 slice(dot), we have to remove 1 part
+                    if(digitVal.startsWith("00") || digitVal.split(".").length - 1 > 1) { 
                         throw new Error(`number found at line ${line}, column ${column} is malformed/not valid(e.g. "00.7" because of double zero).`);
                     };
-                    token("DIGIT", `${digitVal}`); // here for pushing tokens to the lexer
-                    break;
-                case char in simples: // here to simplify(ha, get it?) handling of single-character tokens
-                    let simpleType = simples[char]; // e.g. simples('(') is 'LPAREN' so we automatically get the typw
-                    token(`${simpleType}`, `${char}`); 
-                    move();// so we can move past the token and not create an infinite amount of simples
-                    break;
-                case letter(char): // here for handling of keywords and other recognized identifiers
-                    let letterVal = ''; // here for storing a value we can actually use and compare to our approved identifiers
-                    while(alpha(src[pos])) { // for getting the full token before judging it
-                        letterVal += src[pos];
-                        move(); // for making sure we dont get stuck in the loop
-                    };
-                    if(letterVal in keywords || ) { // for checking if the identifier is whitelisted
-                        token(`${keywords[letterVal]}_KEYWORD`, `${letterVal}`); // if yes, passed as a keyword.
-                    } // If not..
+                    token("DIGIT", digitVal); break;
+                case char in simples:
+                    let simpleType = simples[char]; token(simpleType, char);
+                    move(); break;
+                case letter(char): 
+                    let letterVal = '';
+                    while(alpha(src[pos])) {letterVal += src[pos]; move()};
+                    if(letterVal in keywords) { 
+                        token(`${keywords[letterVal]}_KEYWORD`, `${letterVal}`);
+                    } 
                     else {throw new Error(`unrecognized identifier '${letterVal}' at line ${line}, column ${column}.`)};
                     break;
-                case char in ar_operators: // for checking of arithmetical operatora
-                    let operatorType = ar_operators[char]; // for simplyfying the token() function
-                    if((char !== '!' && char !== '?' && char !== "'") && src[pos+1] === '=') {token(`${operatorType}_EQUALS_OPERATOR`, `${char}=`); move(2)} // condition for checking of math shortcuts while also making sure there's nothing like x != x(which would mean x = x!(factorial)
-                    else if(src[pos+1] === "=") { // if the operator is either !=, ?= or '=...
+                case char in ar_operators: 
+                    let operatorType = ar_operators[char]; 
+                    if((char !== '!' && char !== '?' && char !== "'") && src[pos+1] === '=') {token(`${operatorType}_EQUALS_OPERATOR`, `${char}=`); move(2)}
+                    else if(src[pos+1] === "=") { 
                         throw new Error(`can't assign a variable its own factorial, termial or square root via shortcut, at line ${line}, column ${column}.`);
                     } 
-                    else if(char === src[pos+1] && (char === '?' || char === '!')) {token(`DOUBLE_${char}_OPERATOR`, `${char}${char}`); move(2)} // here because it helps process double factorial/termial
-                    else {token(`${operatorType}_OPERATOR`, `${char}`); move()}; // here to tokenize normal operators.
-                    break;
+                    else if(char === src[pos+1] && (char === '?' || char === '!')) {token(`DOUBLE_${char}_OPERATOR`, `${char}${char}`); move(2)} 
+                    else {token(`${operatorType}_OPERATOR`, `${char}`); move()}; break;
                 case char === "#":
                     let variableVal = ``; move();
                     while(letter(src[pos])) {variableVal += src[pos]; move()};
