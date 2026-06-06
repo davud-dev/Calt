@@ -232,6 +232,7 @@ function CALT() {
     |*|
     \*/
     function interpreter(ast) {
+        const scopes = [{}];
         function factorial(number, move = 1) {
             let result = 1;
             for(let i = 1; i <= number; i += move) {result *= i};
@@ -242,6 +243,11 @@ function CALT() {
             for(let i = 1; i <= number; i += move) {result += i};
             return result;
         };
+        function checkVrb(name) {
+            let i = scopes.length - 1;
+            while(i >= 0) {if(name in scopes[i]) {return scopes[i].name}; i--};
+        };
+        function setVrb(name, value) {scopes[scopes.length - 1].name = value};
         function evaluate(node) {
             switch(node.type) {
                 case 'Literal':
@@ -259,7 +265,15 @@ function CALT() {
                         case '\\': return Math.floor(L); break; case '/': return Math.ceil(L); break;
                     };
                     break;
-                case 'VariableReference': break; //TODO: complete
+                case 'VariableReference':
+                     return checkVrb(node.name); break; 
+            };
+        };
+        function execute(node) {
+            switch(node.type) {
+                case 'VariableDeclaration':
+                    setVrb(node.name, evaluate(node.value)); break;
+                    
             };
         };
     };
