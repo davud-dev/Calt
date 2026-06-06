@@ -2,7 +2,7 @@ function CALT() {
    function lexer(src) {
         let simples = {'(': "LPAREN", ')': "RPAREN", '[': "LBRACK", ']': "RBRACK", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS", ">": "GREATER_THAN", "<": "SMALLER_THAN", ">=": "GREATER_EQUALS", "<=": "SMALLER_EQUALS"};
         let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "fun": "FUNCTION", "output": "OUTPUT_FUNC", "input": "INPUT_FUNC", "cos": "COSINE_FUNC", "sin": "SINE_FUNC", "tan": "TANGENT_FUNC", "log": "LOGARITHM_FUNC"};
-        let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", "/": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL", "|": "ABSOLUTE_VALUE", "\\": "FLOOR", "/": "CEILING", "~": "ROUND"};
+        let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", ":": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL", "|": "ABSOLUTE_VALUE", "\\": "FLOOR", "/": "CEILING", "~": "ROUND"};
         let whitespace = ['\n', '\t', '\r', ' '];
         let pos = 0;
         let tokens = []; 
@@ -113,9 +113,9 @@ function CALT() {
             };
             return L;
         };
-        function parseAS() {return operation(parseMDM(), ["PLUS", "MINUS"])};
+       function parseAS() {return operation(parseMDM(), ["PLUS", "MINUS"])};
         function parseMDM() {return operation(parsePSFT(), ["TIMES", "DIVIDE", "MODULO"])};
-        function parsePSFT() {return operation(parseARG(), ["POWER_OPERATOR", "SQR_RT_OPERATOR", "FACTORIAL_OPERATOR", "TERMIAL_OPERATOR", "DOUBLE_FACTORIAL_OPERATOR", "DOUBLE_TERMIAL_OPERATOR"])};
+        function parsePSFTO() {return operation(parseARG(), ["POWER_OPERATOR", "SQR_RT_OPERATOR", "FACTORIAL_OPERATOR", "TERMIAL_OPERATOR", "DOUBLE_FACTORIAL_OPERATOR", "DOUBLE_TERMIAL_OPERATOR", "ABSOLUTE_VALUE_OPERATOR", "FLOOR_OPERATOR", "CEILING_OPERATOR", "ROUND_OPERATOR"])};
         /*\
         |*|
         \*/
@@ -225,6 +225,46 @@ function CALT() {
             return {
                 type: "CALT_Program",
                 statements: statements
+            };
+        };
+    };
+    /*\
+    |*|
+    \*/
+    function interpreter(ast) {
+        function factorial(number, move = 1) {
+            let result = 1;
+            for(let i = 1; i <= number; i += move) {result *= i};
+            return result;
+        };
+        function termial(number, move = 1) {
+            let result = 1;
+            for(let i = 1; i <= number; i += move) {result += i};
+            return result;
+        };
+        function evaluate(node) {
+            switch(node.type) {
+                case 'Literal':
+                    return node.value; break;
+                case 'BinaryOperation':
+                    let L = evaluate(node.left);
+                    let R = evaluate(node.right);
+                    switch(node.operator) {
+                        case '+': return L + R; break; case '-': return L - R; break;
+                        case '*': return L * R; break;
+                        case ':': return L / R; break;
+                        case '%': return L % R; break;
+                        case '^': return Math.pow(L, R); break;
+                        case "'": return Math.pow(L, 0.5); break;
+                        case '!': return factorial(L); break;
+                        case '!!': return factorial(L, 2); break;
+                        case '?': return termial(L); break;
+                        case '??': return termial(L, 2); break;
+                        case '|': return Math.abs(L); break;
+                        case '\\': return Math.floor(L); break;
+                        case '/': return Math.ceil(L); break;
+                        case '~': return Math.round(L); break;
+                    }; break;
             };
         };
     };
