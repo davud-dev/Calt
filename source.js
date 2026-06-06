@@ -251,20 +251,15 @@ function CALT() {
                     let R = evaluate(node.right);
                     switch(node.operator) {
                         case '+': return L + R; break; case '-': return L - R; break;
-                        case '*': return L * R; break;
-                        case ':': return L / R; break;
-                        case '%': return L % R; break;
-                        case '^': return Math.pow(L, R); break;
-                        case "'": return Math.pow(L, 0.5); break;
-                        case '!': return factorial(L); break;
-                        case '!!': return factorial(L, 2); break;
-                        case '?': return termial(L); break;
-                        case '??': return termial(L, 2); break;
-                        case '|': return Math.abs(L); break;
-                        case '\\': return Math.floor(L); break;
-                        case '/': return Math.ceil(L); break;
-                        case '~': return Math.round(L); break;
-                    }; break;
+                        case '*': return L * R; break; case ':': return L / R; break; case '%': return L % R; break;
+                        case '^': return Math.pow(L, R); break; case "'": return Math.pow(L, 0.5); break;
+                        case '!': return factorial(L); break; case '!!': return factorial(L, 2); break;
+                        case '?': return termial(L); break; case '??': return termial(L, 2); break;
+                        case '|': return Math.abs(L); break; case '~': return Math.round(L); break;
+                        case '\\': return Math.floor(L); break; case '/': return Math.ceil(L); break;
+                    };
+                    break;
+                case 'VariableReference': break; //TODO: complete
             };
         };
     };
