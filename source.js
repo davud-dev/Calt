@@ -35,8 +35,8 @@ function CALT() {
         while(pos < src.length) {
             let char = src[pos]; 
             switch(true) { 
-                case char in whitespace:
-                  if(char === '\n') {line++; column = 1}; pos++; break;
+                case whitespace.includes(char);
+                    if(char === '\n') {line++; column = 1}; pos++; break;
                 case digit(char):
                     let digitVal = '';
                     while(digit(src[pos])) {digitVal += src[pos]; move()};
@@ -219,9 +219,8 @@ function CALT() {
             };
             else {throw new Error(`invalid token '${statement.value}' instead of regular statement at line ${statement.line}, column ${statement.column}.`)};
         };
-        function parseALL() {let main = eat("KEYWORD");
-            if(main.type !== "START") {throw new Error(`program is supposed to start with main{}, with code inside {}, but instead of "main" got "${main.value}.`)};
-            eat("LBRACE"); const statements = []; while(peek().type !== "RBRACE") {statements.push(parseMULTI())}; eat("RBRACE");
+        function parseALL() {
+            const statements = []; while(peek().type !== "END_OF_FILE") {statements.push(parseMULTI())};
             return {
                 type: "CALT_Program",
                 statements: statements
