@@ -269,11 +269,24 @@ function CALT() {
                      return checkVrb(node.name); break; 
             };
         };
+        function output(args) {console.log(args.join(''))};
+        function input(args) {prompt(args.join(''))};
+        function tan(arg) {Math.tan(arg)};
+        function sin(arg) {Math.sin(arg)};
+        function cos(arg) {Math.cos(arg)};
+        function log(arg) {Math.log(arg)};
+        function func(funcName, args) {
+            funcName(args);
+        };
         function execute(node) {
             switch(node.type) {
                 case 'VariableDeclaration':
                     setVrb(node.name, evaluate(node.value)); break;
-                    
+                case 'FunctionCall':
+                    let funcName = node.name;
+                    let evalArgs = evaluate(node.arguments);
+                    func(funcName, evalArgs);
+                    break;
             };
         };
     };
