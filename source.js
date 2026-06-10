@@ -1,6 +1,6 @@
 function CALT() {
    function lexer(src) {
-        let simples = {'(': "LPAREN", ')': "RPAREN", '[': "LBRACK", ']': "RBRACK", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS", ">": "GREATER_THAN", "<": "SMALLER_THAN", ">=": "GREATER_EQUALS", "<=": "SMALLER_EQUALS"};
+        let simples = {'(': "LPAREN", ')': "RPAREN", '[': "LBRACK", ']': "RBRACK", '{': "LBRACE", '}': "RBRACE", ',': "COMMA", ';': "SEMICOLON", "=": "EQUALS", "==": "COND_EQUALS", ">": "GREATER_THAN", "<": "SMALLER_THAN", ">=": "GREATER_EQUALS", "<=": "SMALLER_EQUALS"};
         let keywords = {"main": "START", "org": "ORIGIN", "vrb": "VARIABLE", "const": "CONSTANT", "ret": "RETURN", "if": "IF", "elif": "ELSE_IF", "els": "ELSE", "fun": "FUNCTION", "output": "OUTPUT_FUNC", "input": "INPUT_FUNC", "cos": "COSINE_FUNC", "sin": "SINE_FUNC", "tan": "TANGENT_FUNC", "log": "LOGARITHM_FUNC"};
         let ar_operators = {"+": "PLUS", "-": "MINUS", "*": "TIMES", ":": "DIVIDE", "%": "MODULO", "^": "POWER", "'": "SQR_RT", "!": "FACTORIAL", "?": "TERMIAL", "|": "ABSOLUTE_VALUE", "\\": "FLOOR", "/": "CEILING", "~": "ROUND"};
         let whitespace = ['\n', '\t', '\r', ' '];
@@ -20,15 +20,9 @@ function CALT() {
                 column: column
             });
         };
-        function digit(x) {
-            if(x <= '9' && x >= '0') {return true} else {return false};
-        };
-        function letter(x) { 
-            if((x <= 'z' && x >= 'a') || (x <= 'Z' && x >= 'A')) {return true} else {return false};
-        };
-        function alpha(x) { 
-            if(letter(x) || digit(x)) {return true} else {return false};
-        };
+        function digit(x) {x <= '9' && x >= '0' ? return true : return false};
+        function letter(x) {(x <= 'z' && x >= 'a') || (x <= 'Z' && x >= 'A') ? return true : return false};
+        function alpha(x) {letter(x) || digit(x) ? return true : return false};
         /*\
         |*|
         \*/
@@ -257,15 +251,22 @@ function CALT() {
                     switch(node.operator) {
                         case '+': return L + R; break; case '-': return L - R; break;
                         case '*': return L * R; break; case ':': return L / R; break; case '%': return L % R; break;
-                        case '^': return Math.pow(L, R); break; case "'": return Math.pow(L, 0.5); break;
+                        case '^': return Math.pow(L, R); break; case "'": return Math.sqrt(L); break;
                         case '!': return factorial(L); break; case '!!': return factorial(L, 2); break;
                         case '?': return termial(L); break; case '??': return termial(L, 2); break;
                         case '|': return Math.abs(L); break; case '~': return Math.round(L); break;
                         case '\\': return Math.floor(L); break; case '/': return Math.ceil(L); break;
+                        case '==': return L == R; break;
+                        case '>': return L > R; break; case '<': return L < R; break;
+                        case '>=': return L >= R; break; case '<=': return L <= R; break;
+                        case '&&': return L && R; break; case '||': return L || R; break;
                     };
                     break;
                 case 'VariableReference':
-                     return checkVrb(node.name); break; 
+                     return checkVrb(node.name); break;
+                case 'IfStatement':
+                    let cond = node.condition;
+                    
             };
         };
         function output(args) {console.log(args.join(''))};
@@ -274,13 +275,13 @@ function CALT() {
         function sin(arg) {Math.sin(arg)};
         function cos(arg) {Math.cos(arg)};
         function log(arg) {Math.log(arg)};
-        function func(funcName, args) {
-            funcName(args);
-        };
+        function func(funcName, args) {funcName(args)};
         function execute(node) {
             switch(node.type) {
                 case 'VariableDeclaration':
                     setVrb(node.name, evaluate(node.value)); break;
+                case "IfStatement":
+                     
                 case 'FunctionCall':
                     let funcName = node.name;
                     let evalArgs = evaluate(node.arguments);
